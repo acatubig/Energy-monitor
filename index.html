@@ -1052,18 +1052,42 @@
         }
 
         // Handle window resize with debouncing
-        let resizeTimeout;
-        window.addEventListener('resize', function() {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                // Only reinitialize if gauges exist
-                if (gaugesInitialized && gauges.voltage) {
-                    // Reinitialize gauges with new dimensions
-                    gaugesInitialized = false;
-                    initializeGauges();
+let resizeTimeout;
+let lastWidth = window.innerWidth;
+let lastHeight = window.innerHeight;
+
+window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        // Only reinitialize if dimensions actually changed
+        if (window.innerWidth !== lastWidth || window.innerHeight !== lastHeight) {
+            lastWidth = window.innerWidth;
+            lastHeight = window.innerHeight;
+            
+            if (gaugesInitialized && gauges.voltage) {
+                // Store current values before reinitializing
+                const values = {
+                    voltage: gauges.voltage.currentValue,
+                    current: gauges.current.currentValue,
+                    power: gauges.power.currentValue,
+                    pf: gauges.pf.currentValue
+                };
+                
+                // Reinitialize gauges
+                gaugesInitialized = false;
+                initializeGauges();
+                
+                // Restore the values
+                if (gauges.voltage) {
+                    gauges.voltage.currentValue = values.voltage;
+                    gauges.current.currentValue = values.current;
+                    gauges.power.currentValue = values.power;
+                    gauges.pf.currentValue = values.pf;
                 }
-            }, 250);
-        });
+            }
+        }
+    }, 250);
+});
 
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', function() {
