@@ -61,6 +61,13 @@
             color: #00f2fe;
         }
 
+        .beta-note {
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: #ffa500;
+            font-style: italic;
+        }
+
         .connection-status {
             margin-top: 15px;
         }
@@ -306,18 +313,21 @@
             background: rgba(79, 172, 254, 0.1);
             border: 1px solid #4facfe;
             border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
+            padding: 12px;
+            margin-bottom: 15px;
         }
 
         .info-box h3 {
             color: #4facfe;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            font-size: 0.9em;
         }
 
         .info-box ul {
             list-style: none;
-            padding-left: 20px;
+            padding-left: 15px;
+            font-size: 0.8em;
+            line-height: 1.4;
         }
 
         .info-box li:before {
@@ -384,6 +394,7 @@
             </div>
             <div class="developer-info">
                 <strong>Developer:</strong> Argie Catubig
+                <div class="beta-note">Beta Version - For Testing and Development</div>
             </div>
         </div>
 
@@ -400,8 +411,8 @@
                     <li>Leave username/password empty if not required</li>
                 </ul>
                 
-                <h3 style="margin-top: 15px;">🔗 Example URLs:</h3>
-                <ul style="font-family: monospace; font-size: 0.9em;">
+                <h3 style="margin-top: 12px;">🔗 Example URLs:</h3>
+                <ul style="font-family: monospace; font-size: 0.75em;">
                     <li>Local: ws://192.168.0.100:9001</li>
                     <li>Public IP: ws://122.54.XXX.XXX:9001</li>
                     <li>ngrok: wss://abc123.ngrok-free.app</li>
@@ -442,7 +453,7 @@
             <div class="grid">
                 <div class="card">
                     <div class="card-title">
-                        <div class="card-icon">⚡</div>
+                        <div class="card-icon">V</div>
                         Voltage
                     </div>
                     <div class="card-value" id="voltage">--<span class="card-unit">V</span></div>
@@ -453,7 +464,7 @@
 
                 <div class="card">
                     <div class="card-title">
-                        <div class="card-icon">🔌</div>
+                        <div class="card-icon">A</div>
                         Current
                     </div>
                     <div class="card-value" id="current">--<span class="card-unit">A</span></div>
@@ -464,7 +475,7 @@
 
                 <div class="card">
                     <div class="card-title">
-                        <div class="card-icon">💡</div>
+                        <div class="card-icon">W</div>
                         Power
                     </div>
                     <div class="card-value" id="power">--<span class="card-unit">W</span></div>
@@ -475,7 +486,7 @@
 
                 <div class="card">
                     <div class="card-title">
-                        <div class="card-icon">📊</div>
+                        <div class="card-icon">PF</div>
                         Power Factor
                     </div>
                     <div class="card-value" id="powerFactor">--</div>
@@ -486,11 +497,14 @@
 
                 <div class="card">
                     <div class="card-title">
-                        <div class="card-icon">〰️</div>
+                        <div class="card-icon">Hz</div>
                         Frequency
                     </div>
                     <div class="card-value" id="frequency">--<span class="card-unit">Hz</span></div>
-                    <div class="timestamp" style="margin-top: 10px;">Daily: <span id="dailyKwh">--</span> kWh</div>
+                    <div class="timestamp" style="margin-top: 10px;">
+                        Daily: <span id="dailyKwh">--</span> kWh<br>
+                        Monthly: <span id="monthlyKwh">--</span> kWh
+                    </div>
                 </div>
 
                 <div class="card cost-display">
@@ -504,7 +518,7 @@
 
                 <div class="card">
                     <div class="card-title">
-                        <div class="card-icon">⚡</div>
+                        <div class="card-icon">E</div>
                         Total Energy
                     </div>
                     <div class="card-value" id="totalEnergy">--<span class="card-unit">kWh</span></div>
@@ -513,7 +527,7 @@
 
                 <div class="card">
                     <div class="card-title">
-                        <div class="card-icon">📡</div>
+                        <div class="card-icon">i</div>
                         Device Info
                     </div>
                     <div style="text-align: left; font-size: 0.9em;">
@@ -620,58 +634,79 @@
                 color: color,
                 width: width,
                 height: height,
-                lastValue: null,
+                currentValue: 0, // Store current value for smooth transitions
+                targetValue: 0,
+                animationFrame: null,
                 draw: function(value) {
-                    // Only redraw if value changed significantly
-                    if (this.lastValue !== null && Math.abs(this.lastValue - value) < 0.01) {
-                        return;
-                    }
-                    this.lastValue = value;
+                    // Set target value
+                    this.targetValue = value;
                     
+                    // Cancel any existing animation
+                    if (this.animationFrame) {
+                        cancelAnimationFrame(this.animationFrame);
+                    }
+                    
+                    // Animate from current to target value
+                    const animate = () => {
+                        const diff = this.targetValue - this.currentValue;
+                        const step = diff * 0.1; // Smooth animation speed
+                        
+                        // Update current value
+                        if (Math.abs(diff) > 0.01) {
+                            this.currentValue += step;
+                            this.animationFrame = requestAnimationFrame(animate);
+                        } else {
+                            this.currentValue = this.targetValue;
+                        }
+                        
+                        // Draw gauge with current value
+                        this.drawGauge(this.currentValue);
+                    };
+                    
+                    animate();
+                },
+                drawGauge: function(value) {
                     const ctx = this.ctx;
                     const width = this.width;
                     const height = this.height;
                     
-                    // Use requestAnimationFrame for smooth rendering
-                    requestAnimationFrame(() => {
-                        // Clear canvas
-                        ctx.clearRect(0, 0, width, height);
-                        
-                        // Save context state
-                        ctx.save();
-                        
-                        // Calculate gauge dimensions (larger gauge)
-                        const centerX = width / 2;
-                        const centerY = height - 20;
-                        const radius = Math.min(width / 2 - 20, height - 40); // Larger radius
-                        
-                        // Background arc
-                        ctx.beginPath();
-                        ctx.arc(centerX, centerY, radius, Math.PI, 0, false);
-                        ctx.lineWidth = 15; // Thicker line
-                        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-                        ctx.stroke();
-                        
-                        // Value arc
-                        const percentage = Math.max(0, Math.min(1, (value - this.min) / (this.max - this.min)));
-                        const angle = Math.PI + (Math.PI * percentage);
-                        
-                        ctx.beginPath();
-                        ctx.arc(centerX, centerY, radius, Math.PI, angle, false);
-                        ctx.lineWidth = 15; // Thicker line
-                        ctx.strokeStyle = this.color;
-                        ctx.stroke();
-                        
-                        // Value text (larger)
-                        ctx.fillStyle = '#fff';
-                        ctx.font = 'bold 20px Arial'; // Larger font
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(value.toFixed(1), centerX, centerY - 10);
-                        
-                        // Restore context state
-                        ctx.restore();
-                    });
+                    // Clear canvas
+                    ctx.clearRect(0, 0, width, height);
+                    
+                    // Save context state
+                    ctx.save();
+                    
+                    // Calculate gauge dimensions (larger gauge)
+                    const centerX = width / 2;
+                    const centerY = height - 20;
+                    const radius = Math.min(width / 2 - 20, height - 40);
+                    
+                    // Background arc
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, Math.PI, 0, false);
+                    ctx.lineWidth = 15;
+                    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                    ctx.stroke();
+                    
+                    // Value arc
+                    const percentage = Math.max(0, Math.min(1, (value - this.min) / (this.max - this.min)));
+                    const angle = Math.PI + (Math.PI * percentage);
+                    
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, Math.PI, angle, false);
+                    ctx.lineWidth = 15;
+                    ctx.strokeStyle = this.color;
+                    ctx.stroke();
+                    
+                    // Value text
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(value.toFixed(1), centerX, centerY - 10);
+                    
+                    // Restore context state
+                    ctx.restore();
                 }
             };
         }
@@ -879,7 +914,7 @@
             requestAnimationFrame(() => {
                 // Handle both old format and new format
                 let voltage, current, power, powerFactor, frequency;
-                let totalEnergy, dailyKwh, dailyCost, rate;
+                let totalEnergy, dailyKwh, monthlyKwh, dailyCost, rate;
                 
                 // Check if data is in new format (flat structure)
                 if (data.voltage !== undefined) {
@@ -891,10 +926,11 @@
                     frequency = data.frequency || 60;
                     totalEnergy = data.energy || 0;
                     dailyKwh = data.dailyKwh || 0;
+                    monthlyKwh = data.monthlyKwh || (dailyKwh * 30); // Estimate if not provided
                     dailyCost = data.dailyCost || 0;
                     
-                    // Calculate rate from daily cost and consumption
-                    rate = dailyKwh > 0 ? (dailyCost / dailyKwh) : 11.16;
+                    // Rate should be constant - use from data or default
+                    rate = data.rate || 11.16; // Fixed rate, not calculated
                 } else if (data.electrical) {
                     // Old format - nested structure
                     voltage = data.electrical.voltage || 0;
@@ -906,10 +942,12 @@
                     if (data.energy) {
                         totalEnergy = data.energy.total_kwh || 0;
                         dailyKwh = data.energy.daily_kwh || 0;
+                        monthlyKwh = data.energy.monthly_kwh || (dailyKwh * 30);
                     }
                     
                     if (data.cost) {
                         dailyCost = data.cost.daily_peso || 0;
+                        // Use fixed rate from data, not calculated
                         rate = data.cost.rate_per_kwh || 11.16;
                     }
                 }
@@ -921,6 +959,7 @@
                 document.getElementById('powerFactor').textContent = powerFactor.toFixed(2);
                 document.getElementById('frequency').innerHTML = `${frequency.toFixed(1)}<span class="card-unit">Hz</span>`;
                 document.getElementById('dailyKwh').textContent = dailyKwh.toFixed(3);
+                document.getElementById('monthlyKwh').textContent = monthlyKwh.toFixed(2);
 
                 // Update gauges only if initialized
                 if (gaugesInitialized && gauges.voltage) {
@@ -942,7 +981,7 @@
 
                 // Update cost values
                 document.getElementById('dailyCost').textContent = `₱ ${dailyCost.toFixed(2)}`;
-                document.getElementById('rate').textContent = rate.toFixed(2);
+                document.getElementById('rate').textContent = rate.toFixed(2); // Display fixed rate
 
                 // Update timestamp
                 const now = new Date();
