@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Energy Monitor - LoRaWAN Dashboard | Developed by Argie Catubig</title>
-    <meta name="description" content="Real-time energy monitoring dashboard for LoRaWAN smart meter. Developed by Argie Catubig.">
-    <meta name="author" content="Argie Catubig">
+    <title>Energy Monitor - LoRaWAN Dashboard | Developed by Argie Delgado</title>
+    <meta name="description" content="Real-time energy monitoring dashboard for LoRaWAN smart meter. Developed by Argie Delgado.">
+    <meta name="author" content="Argie Delgado">
     
     <!-- MQTT.js Library - Browser Version -->
     <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
@@ -530,41 +530,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 30px 20px;
-            margin-top: 50px;
-            border-top: 1px solid var(--border-secondary);
-            color: var(--text-secondary);
-            font-size: 0.9em;
-        }
-
-        .footer a {
-            color: var(--primary);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .footer a:hover {
-            color: var(--primary-light);
-            text-decoration: underline;
-        }
-
-        .version-badge {
-            display: inline-block;
-            background: var(--bg-hover);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            margin-left: 10px;
-        }
-
         /* Responsive Design */
         @media (max-width: 768px) {
             .theme-switcher {
@@ -625,7 +590,7 @@
             </div>
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-secondary);">
                 <div style="color: var(--text-secondary); font-size: 0.9em;">
-                    <strong style="color: var(--primary);">Developer:</strong> Argie Catubig
+                    <strong style="color: var(--primary);">Developer:</strong> Argie Delgado
                 </div>
                 <div style="color: var(--warning); font-size: 0.85em; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <span style="display: inline-block; width: 8px; height: 8px; background: var(--warning); border-radius: 50%; animation: pulse 2s infinite;"></span>
@@ -662,4 +627,721 @@
                     <input type="text" id="brokerUrl" placeholder="ws://your-ip-address:9001" value="">
                 </div>
                 <div class="config-item">
-                   
+                    <label for="mqttTopic">MQTT Topic</label>
+                    <input type="text" id="mqttTopic" value="application/1/device/9fb27692fb0c2381/event/up">
+                </div>
+                <div class="config-item">
+                    <label for="mqttUsername">Username (optional)</label>
+                    <input type="text" id="mqttUsername" placeholder="Leave empty if not required">
+                </div>
+                <div class="config-item">
+                    <label for="mqttPassword">Password (optional)</label>
+                    <input type="password" id="mqttPassword" placeholder="Leave empty if not required">
+                </div>
+            </div>
+
+            <button class="btn" onclick="connectMQTT()">Connect to MQTT Broker</button>
+            <button class="btn disconnect" onclick="disconnectMQTT()" style="display: none; margin-left: 10px;" id="disconnectBtn">Disconnect</button>
+        </div>
+
+        <!-- Alert Section -->
+        <div class="alert" id="alert">
+            <strong>⚠️ Alert:</strong> <span id="alertMessage"></span>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="dashboard-section" id="dashboardSection">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-icon">⚡</div>
+                        Voltage
+                    </div>
+                    <div class="card-value">
+                        <span id="voltage">--</span>
+                        <span class="card-unit">V</span>
+                    </div>
+                    <div class="gauge-container">
+                        <canvas id="voltageGauge" class="gauge"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-icon">🔌</div>
+                        Current
+                    </div>
+                    <div class="card-value">
+                        <span id="current">--</span>
+                        <span class="card-unit">A</span>
+                    </div>
+                    <div class="gauge-container">
+                        <canvas id="currentGauge" class="gauge"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-icon">💡</div>
+                        Power
+                    </div>
+                    <div class="card-value">
+                        <span id="power">--</span>
+                        <span class="card-unit">W</span>
+                    </div>
+                    <div class="gauge-container">
+                        <canvas id="powerGauge" class="gauge"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-icon">📊</div>
+                        Power Factor
+                    </div>
+                    <div class="card-value">
+                        <span id="powerFactor">--</span>
+                    </div>
+                    <div class="gauge-container">
+                        <canvas id="pfGauge" class="gauge"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-icon">〰️</div>
+                        Frequency
+                    </div>
+                    <div class="card-value">
+                        <span id="frequency">--</span>
+                        <span class="card-unit">Hz</span>
+                    </div>
+                    <div class="timestamp">Daily: <span id="dailyKwh">--</span> kWh</div>
+                </div>
+
+                <div class="card cost-display">
+                    <div class="card-title">
+                        <div class="card-icon">₱</div>
+                        Daily Cost
+                    </div>
+                    <div class="card-value">
+                        <span>₱</span>
+                        <span id="dailyCost">--</span>
+                    </div>
+                    <div style="opacity: 0.9;">Rate: ₱<span id="rate">--</span>/kWh</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-icon">⚡</div>
+                        Total Energy
+                    </div>
+                    <div class="card-value">
+                        <span id="totalEnergy">--</span>
+                        <span class="card-unit">kWh</span>
+                    </div>
+                    <div class="timestamp" id="lastUpdate">Last update: --</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-icon">📡</div>
+                        Device Info
+                    </div>
+                    <div style="text-align: left; font-size: 0.9em;">
+                        <div style="margin: 8px 0;">
+                            <strong style="color: var(--primary);">DevEUI:</strong> 
+                            <span id="devEUI" style="font-family: monospace; color: var(--text-secondary);">--</span>
+                        </div>
+                        <div style="margin: 8px 0;">
+                            <strong style="color: var(--primary);">RSSI:</strong> 
+                            <span id="rssi" style="color: var(--text-secondary);">--</span> dBm
+                        </div>
+                        <div style="margin: 8px 0;">
+                            <strong style="color: var(--primary);">SNR:</strong> 
+                            <span id="snr" style="color: var(--text-secondary);">--</span> dB
+                        </div>
+                        <div style="margin: 8px 0;">
+                            <strong style="color: var(--primary);">Gateway:</strong> 
+                            <span id="gateway" style="font-size: 0.85em; color: var(--text-secondary);">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card chart-container">
+                    <div class="card-title">
+                        <div class="card-icon">📈</div>
+                        Power Consumption (Real-time)
+                    </div>
+                    <canvas id="powerChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Management
+        const THEME_KEY = 'energy_monitor_theme';
+        const CONFIG_KEY = 'energy_monitor_config';
+        
+        function initTheme() {
+            const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeToggle').checked = savedTheme === 'dark';
+            updateThemeIcon(savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem(THEME_KEY, newTheme);
+            updateThemeIcon(newTheme);
+            
+            // Update chart theme
+            if (powerChart) {
+                updateChartTheme();
+            }
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (theme === 'dark') {
+                icon.innerHTML = '<path d="M12 3V1m0 22v-2m9-9h2M1 12h2m16.5-6.5L21 4m-2.5 16.5L21 20M4.5 4.5L3 3m2.5 16.5L3 21M12 18a6 6 0 100-12 6 6 0 000 12z"/>';
+            } else {
+                icon.innerHTML = '<path d="M12 21a9 9 0 109-9c0 .6-.063 1.185-.182 1.745A6 6 0 118.255 20.82C9.17 20.94 10.08 21 11 21h1z"/>';
+            }
+        }
+
+        document.getElementById('themeToggle').addEventListener('change', toggleTheme);
+
+        // Configuration storage
+        let client = null;
+        let powerChart = null;
+        let gauges = {};
+        let reconnectTimer = null;
+        let gaugesInitialized = false;
+
+        // Alert thresholds
+        const THRESHOLDS = {
+            voltage: { min: 200, max: 250 },
+            current: { max: 20 },
+            power: { max: 3000 },
+            powerFactor: { min: 0.8 }
+        };
+
+        // Load saved configuration
+        function loadConfig() {
+            const saved = localStorage.getItem(CONFIG_KEY);
+            if (saved) {
+                try {
+                    const config = JSON.parse(saved);
+                    document.getElementById('brokerUrl').value = config.brokerUrl || '';
+                    document.getElementById('mqttTopic').value = config.mqttTopic || 'application/1/device/9fb27692fb0c2381/event/up';
+                    document.getElementById('mqttUsername').value = config.mqttUsername || '';
+                    document.getElementById('mqttPassword').value = config.mqttPassword || '';
+                    return config;
+                } catch (e) {
+                    console.error('Failed to load config:', e);
+                }
+            }
+            return null;
+        }
+
+        // Save configuration
+        function saveConfig() {
+            const config = {
+                brokerUrl: document.getElementById('brokerUrl').value,
+                mqttTopic: document.getElementById('mqttTopic').value,
+                mqttUsername: document.getElementById('mqttUsername').value,
+                mqttPassword: document.getElementById('mqttPassword').value
+            };
+            localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+            return config;
+        }
+
+        // Get theme colors
+        function getThemeColors() {
+            const theme = document.documentElement.getAttribute('data-theme');
+            const isDark = theme === 'dark';
+            
+            return {
+                primary: isDark ? '#6366f1' : '#4f46e5',
+                secondary: isDark ? '#06b6d4' : '#0891b2',
+                success: isDark ? '#10b981' : '#059669',
+                warning: isDark ? '#f59e0b' : '#d97706',
+                danger: isDark ? '#ef4444' : '#dc2626',
+                text: isDark ? '#f3f4f6' : '#111827',
+                textSecondary: isDark ? '#9ca3af' : '#4b5563',
+                gridColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                gaugeBackground: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
+            };
+        }
+
+        // Create gauge with optimized drawing
+        function createGauge(canvasId, label, min, max, colorKey) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return null;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size once
+            const container = canvas.parentElement;
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            return {
+                ctx: ctx,
+                canvas: canvas,
+                min: min,
+                max: max,
+                colorKey: colorKey,
+                width: width,
+                height: height,
+                lastValue: null,
+                draw: function(value) {
+                    // Skip if value hasn't changed significantly
+                    if (this.lastValue !== null && Math.abs(this.lastValue - value) < 0.01) {
+                        return;
+                    }
+                    
+                    this.lastValue = value;
+                    
+                    const ctx = this.ctx;
+                    const width = this.width;
+                    const height = this.height;
+                    const centerX = width / 2;
+                    const centerY = height - 10;
+                    const radius = Math.min(width, height) * 0.35;
+                    
+                    const colors = getThemeColors();
+                    
+                    // Clear only the drawing area
+                    ctx.clearRect(0, 0, width, height);
+                    
+                    // Save context state
+                    ctx.save();
+                    
+                    // Background arc
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, Math.PI, 0, false);
+                    ctx.lineWidth = 10;
+                    ctx.strokeStyle = colors.gaugeBackground;
+                    ctx.stroke();
+                    
+                    // Value arc
+                    const percentage = Math.max(0, Math.min(1, (value - this.min) / (this.max - this.min)));
+                    const angle = Math.PI + (Math.PI * percentage);
+                    
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, Math.PI, angle, false);
+                    ctx.lineWidth = 10;
+                    ctx.strokeStyle = colors[this.colorKey];
+                    ctx.stroke();
+                    
+                    // Value text
+                    ctx.fillStyle = colors.text;
+                    ctx.font = '16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(value.toFixed(1), centerX, centerY - 10);
+                    
+                    // Restore context state
+                    ctx.restore();
+                }
+            };
+        }
+
+        // Initialize all gauges once
+        function initializeGauges() {
+            if (gaugesInitialized) return;
+            
+            // Wait for DOM to be ready
+            requestAnimationFrame(() => {
+                gauges.voltage = createGauge('voltageGauge', 'V', 0, 300, 'primary');
+                gauges.current = createGauge('currentGauge', 'A', 0, 10, 'secondary');
+                gauges.power = createGauge('powerGauge', 'W', 0, 1000, 'warning');
+                gauges.pf = createGauge('pfGauge', 'PF', 0, 1, 'success');
+                
+                gaugesInitialized = true;
+                
+                // Draw initial values
+                if (gauges.voltage) gauges.voltage.draw(0);
+                if (gauges.current) gauges.current.draw(0);
+                if (gauges.power) gauges.power.draw(0);
+                if (gauges.pf) gauges.pf.draw(0);
+            });
+        }
+
+        // Update chart theme
+        function updateChartTheme() {
+            if (!powerChart) return;
+            
+            const colors = getThemeColors();
+            
+            powerChart.options.scales.x.grid.color = colors.gridColor;
+            powerChart.options.scales.x.ticks.color = colors.textSecondary;
+            powerChart.options.scales.y.grid.color = colors.gridColor;
+            powerChart.options.scales.y.ticks.color = colors.textSecondary;
+            powerChart.data.datasets[0].borderColor = colors.primary;
+            powerChart.data.datasets[0].backgroundColor = colors.primary + '20';
+            
+            powerChart.update();
+        }
+
+        // Initialize power chart
+        function initializePowerChart() {
+            const ctx = document.getElementById('powerChart').getContext('2d');
+            const colors = getThemeColors();
+            
+            powerChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Power (W)',
+                        data: [],
+                        borderColor: colors.primary,
+                        backgroundColor: colors.primary + '20',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0 // Disable animations for performance
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: colors.gridColor
+                            },
+                            ticks: {
+                                color: colors.textSecondary,
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: colors.gridColor
+                            },
+                            ticks: {
+                                color: colors.textSecondary
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Connect to MQTT broker
+        function connectMQTT() {
+            const config = saveConfig();
+            
+            if (!config.brokerUrl) {
+                showAlert('Please enter MQTT broker URL');
+                return;
+            }
+
+            // Show loading state
+            document.getElementById('status').textContent = 'Connecting...';
+            document.getElementById('status').classList.remove('connected');
+
+            const options = {
+                clean: true,
+                connectTimeout: 30000,
+                reconnectPeriod: 5000,
+                clientId: 'energy_monitor_' + Math.random().toString(16).substr(2, 8),
+                keepalive: 60,
+                protocolVersion: 4,
+                reconnect: true
+            };
+
+            if (config.mqttUsername) {
+                options.username = config.mqttUsername;
+                options.password = config.mqttPassword;
+            }
+
+            try {
+                console.log('Connecting to:', config.brokerUrl);
+                client = mqtt.connect(config.brokerUrl, options);
+
+                client.on('connect', function() {
+                    console.log('Connected to MQTT broker');
+                    document.getElementById('status').textContent = 'Connected';
+                    document.getElementById('status').classList.add('connected');
+                    document.getElementById('disconnectBtn').style.display = 'inline-block';
+                    
+                    // Show dashboard
+                    document.getElementById('dashboardSection').classList.add('active');
+                    
+                    // Initialize charts if not already done
+                    if (!gaugesInitialized) {
+                        setTimeout(() => {
+                            initializeGauges();
+                            initializePowerChart();
+                        }, 100);
+                    }
+                    
+                    // Subscribe to topic
+                    client.subscribe(config.mqttTopic, function(err) {
+                        if (!err) {
+                            console.log('Subscribed to topic:', config.mqttTopic);
+                        } else {
+                            console.error('Subscribe error:', err);
+                            showAlert('Failed to subscribe to topic: ' + err.message);
+                        }
+                    });
+                });
+
+                client.on('message', function(topic, message) {
+                    try {
+                        const payload = JSON.parse(message.toString());
+                        console.log('Received data:', payload);
+                        
+                        // Update Device EUI if present
+                        if (payload.devEUI) {
+                            document.getElementById('deviceEUI').textContent = payload.devEUI.toUpperCase();
+                            document.getElementById('devEUI').textContent = payload.devEUI.toUpperCase();
+                        }
+                        
+                        // Update device info if present
+                        if (payload.rxInfo && payload.rxInfo.length > 0) {
+                            const rxInfo = payload.rxInfo[0];
+                            document.getElementById('rssi').textContent = rxInfo.rssi || '--';
+                            document.getElementById('snr').textContent = rxInfo.loRaSNR ? rxInfo.loRaSNR.toFixed(1) : '--';
+                            document.getElementById('gateway').textContent = rxInfo.name || rxInfo.gatewayID || '--';
+                        }
+                        
+                        // Extract the decoded data
+                        if (payload.object) {
+                            updateDashboard(payload.object);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing message:', error);
+                    }
+                });
+
+                client.on('error', function(error) {
+                    console.error('MQTT error:', error);
+                    showAlert('Connection error: ' + error.message);
+                    document.getElementById('status').textContent = 'Error';
+                    document.getElementById('status').classList.remove('connected');
+                });
+
+                client.on('offline', function() {
+                    document.getElementById('status').textContent = 'Offline';
+                    document.getElementById('status').classList.remove('connected');
+                });
+
+                client.on('reconnect', function() {
+                    document.getElementById('status').textContent = 'Reconnecting...';
+                    document.getElementById('status').classList.remove('connected');
+                });
+
+            } catch (error) {
+                console.error('Connection error:', error);
+                showAlert('Failed to connect: ' + error.message);
+            }
+        }
+
+        // Disconnect from MQTT
+        function disconnectMQTT() {
+            if (client) {
+                client.end();
+                client = null;
+            }
+            document.getElementById('status').textContent = 'Disconnected';
+            document.getElementById('status').classList.remove('connected');
+            document.getElementById('disconnectBtn').style.display = 'none';
+            document.getElementById('dashboardSection').classList.remove('active');
+        }
+
+        // Update dashboard with new data
+        function updateDashboard(data) {
+            // Use requestAnimationFrame for smooth updates
+            requestAnimationFrame(() => {
+                // Handle both old format and new format
+                let voltage, current, power, powerFactor, frequency;
+                let totalEnergy, dailyKwh, dailyCost, rate;
+                
+                // Check if data is in new format (flat structure)
+                if (data.voltage !== undefined) {
+                    // New format - direct values
+                    voltage = data.voltage || 0;
+                    current = data.current || 0;
+                    power = data.power || 0;
+                    powerFactor = data.powerFactor || 0;
+                    frequency = data.frequency || 60;
+                    totalEnergy = data.energy || 0;
+                    dailyKwh = data.dailyKwh || 0;
+                    dailyCost = data.dailyCost || 0;
+                    
+                    // Calculate rate from daily cost and consumption
+                    rate = dailyKwh > 0 ? (dailyCost / dailyKwh) : 11.16;
+                } else if (data.electrical) {
+                    // Old format - nested structure
+                    voltage = data.electrical.voltage || 0;
+                    current = data.electrical.current || 0;
+                    power = data.electrical.power || 0;
+                    powerFactor = data.electrical.power_factor || 0;
+                    frequency = data.electrical.frequency || 60;
+                    
+                    if (data.energy) {
+                        totalEnergy = data.energy.total_kwh || 0;
+                        dailyKwh = data.energy.daily_kwh || 0;
+                    }
+                    
+                    if (data.cost) {
+                        dailyCost = data.cost.daily_peso || 0;
+                        rate = data.cost.rate_per_kwh || 11.16;
+                    }
+                }
+                
+                // Update display values
+                document.getElementById('voltage').textContent = voltage.toFixed(1);
+                document.getElementById('current').textContent = current.toFixed(2);
+                document.getElementById('power').textContent = power.toFixed(0);
+                document.getElementById('powerFactor').textContent = powerFactor.toFixed(2);
+                document.getElementById('frequency').textContent = frequency.toFixed(1);
+                document.getElementById('dailyKwh').textContent = dailyKwh.toFixed(3);
+
+                // Update gauges only if initialized
+                if (gaugesInitialized && gauges.voltage) {
+                    gauges.voltage.draw(voltage);
+                    gauges.current.draw(current);
+                    gauges.power.draw(power);
+                    gauges.pf.draw(powerFactor);
+                }
+
+                // Check thresholds
+                checkThresholds(voltage, current, power, powerFactor);
+
+                // Update chart
+                updateChart(power);
+
+                // Update energy values
+                document.getElementById('totalEnergy').textContent = totalEnergy.toFixed(3);
+
+                // Update cost values
+                document.getElementById('dailyCost').textContent = dailyCost.toFixed(2);
+                document.getElementById('rate').textContent = rate.toFixed(2);
+
+                // Update timestamp
+                const now = new Date();
+                document.getElementById('lastUpdate').textContent = 
+                    `Last update: ${now.toLocaleTimeString()}`;
+            });
+        }
+
+        // Update power chart
+        function updateChart(power) {
+            if (!powerChart) return;
+
+            const now = new Date();
+            const timeLabel = now.toLocaleTimeString();
+
+            // Keep only last 50 data points
+            if (powerChart.data.labels.length > 50) {
+                powerChart.data.labels.shift();
+                powerChart.data.datasets[0].data.shift();
+            }
+
+            powerChart.data.labels.push(timeLabel);
+            powerChart.data.datasets[0].data.push(power);
+            powerChart.update('none'); // 'none' mode for better performance
+        }
+
+        // Check thresholds and show alerts
+        function checkThresholds(voltage, current, power, powerFactor) {
+            const alerts = [];
+
+            if (voltage < THRESHOLDS.voltage.min || voltage > THRESHOLDS.voltage.max) {
+                alerts.push(`Voltage out of range: ${voltage.toFixed(1)}V`);
+            }
+            if (current > THRESHOLDS.current.max) {
+                alerts.push(`High current detected: ${current.toFixed(2)}A`);
+            }
+            if (power > THRESHOLDS.power.max) {
+                alerts.push(`High power consumption: ${power.toFixed(0)}W`);
+            }
+            if (powerFactor < THRESHOLDS.powerFactor.min) {
+                alerts.push(`Low power factor: ${powerFactor.toFixed(2)}`);
+            }
+
+            if (alerts.length > 0) {
+                showAlert(alerts.join(' | '));
+            } else {
+                hideAlert();
+            }
+        }
+
+        // Show alert
+        function showAlert(message) {
+            const alertDiv = document.getElementById('alert');
+            const alertMessage = document.getElementById('alertMessage');
+            alertMessage.textContent = message;
+            alertDiv.classList.add('show');
+
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                hideAlert();
+            }, 10000);
+        }
+
+        // Hide alert
+        function hideAlert() {
+            const alertDiv = document.getElementById('alert');
+            alertDiv.classList.remove('show');
+        }
+
+        // Handle window resize more efficiently
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (gaugesInitialized) {
+                    // Re-initialize gauges on resize
+                    gaugesInitialized = false;
+                    initializeGauges();
+                }
+            }, 250);
+        });
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme
+            initTheme();
+            
+            // Load saved configuration
+            const savedConfig = loadConfig();
+            
+            // Auto-connect if configuration exists
+            if (savedConfig && savedConfig.brokerUrl) {
+                // Give user a moment to see the configuration
+                setTimeout(() => {
+                    connectMQTT();
+                }, 1000);
+            }
+        });
+
+        // Prevent gauge flicker on mobile devices
+        document.addEventListener('touchmove', function(e) {
+            if (e.target.closest('.gauge-container')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
