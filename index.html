@@ -430,6 +430,83 @@
             font-weight: bold;
         }
 
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .data-label {
+            color: #888;
+        }
+
+        .data-value {
+            color: #4facfe;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #44ff44;
+            margin-right: 5px;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .status-indicator.warning {
+            background: #ffa500;
+        }
+
+        .status-indicator.critical {
+            background: #ff4444;
+        }
+
+        .billing-info {
+            background: rgba(245, 175, 25, 0.1);
+            border: 1px solid #f5af19;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .alert-history {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+
+        .alert-item {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.85em;
+        }
+
+        .alert-item:last-child {
+            border-bottom: none;
+        }
+
+        .alert-severity-1 { color: #4facfe; }
+        .alert-severity-2 { color: #ffa500; }
+        .alert-severity-3 { color: #ff4444; }
+
         @media (max-width: 768px) {
             .grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -466,6 +543,10 @@
             .gauge-container {
                 height: 100px;
             }
+
+            .data-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .dashboard-section {
@@ -495,6 +576,44 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-size: 0.9em;
+        }
+
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            border-color: transparent;
+            box-shadow: 0 5px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -507,7 +626,7 @@
             </div>
             <div class="developer-info">
                 <strong>Developer:</strong> Argie Catubig
-                <div class="beta-note">Beta Version - For Testing and Development</div>
+                <div class="beta-note">Enhanced Version - Multi-Port Support</div>
             </div>
         </div>
 
@@ -568,118 +687,411 @@
 
         <!-- Dashboard Section -->
         <div class="dashboard-section" id="dashboardSection">
-            <div class="grid">
-                <div class="card">
-                    <div class="card-title">
-                        <div class="card-icon">⚡</div>
-                        Voltage
-                    </div>
-                    <div class="card-value" id="voltage">--<span class="card-unit">V</span></div>
-                    <div class="gauge-container">
-                        <canvas id="voltageGauge" class="gauge"></canvas>
-                    </div>
-                </div>
+            <!-- Tabs for different views -->
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('realtime')">Real-time</div>
+                <div class="tab" onclick="switchTab('consumption')">Consumption</div>
+                <div class="tab" onclick="switchTab('billing')">Billing</div>
+                <div class="tab" onclick="switchTab('device')">Device Status</div>
+                <div class="tab" onclick="switchTab('alerts')">Alert History</div>
+            </div>
 
-                <div class="card">
-                    <div class="card-title">
-                        <div class="card-icon">🔌</div>
-                        Current
-                    </div>
-                    <div class="card-value" id="current">--<span class="card-unit">A</span></div>
-                    <div class="gauge-container">
-                        <canvas id="currentGauge" class="gauge"></canvas>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title">
-                        <div class="card-icon">💡</div>
-                        Power
-                    </div>
-                    <div class="card-value" id="power">--<span class="card-unit">W</span></div>
-                    <div class="gauge-container">
-                        <canvas id="powerGauge" class="gauge"></canvas>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title">
-                        <div class="card-icon">📊</div>
-                        Power Factor
-                    </div>
-                    <div class="card-value" id="powerFactor">--</div>
-                    <div class="gauge-container">
-                        <canvas id="pfGauge" class="gauge"></canvas>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title">
-                        <div class="card-icon">〰️</div>
-                        Frequency
-                    </div>
-                    <div class="card-value" id="frequency">--<span class="card-unit">Hz</span></div>
-                    <div class="timestamp" style="margin-top: 10px;">
-                        Daily: <span id="dailyKwh">--</span> kWh<br>
-                        Monthly: <span id="monthlyKwh">--</span> kWh
-                    </div>
-                </div>
-
-                <div class="card cost-display">
-                    <div class="card-title" style="color: white;">
-                        <div class="card-icon" style="background: white; color: #f12711;">₱</div>
-                        Daily Cost
-                    </div>
-                    <div class="card-value" id="dailyCost">₱ --</div>
-                    <div style="color: rgba(255,255,255,0.8);">Rate: ₱<span id="rate">--</span>/kWh</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title">
-                        <div class="card-icon">⚡</div>
-                        Total Energy
-                    </div>
-                    <div class="card-value" id="totalEnergy">--<span class="card-unit">kWh</span></div>
-                    <div class="timestamp" id="lastUpdate">Last update: --</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title">
-                        <div class="card-icon">📡</div>
-                        Device Info
-                    </div>
-                    <div style="text-align: left; font-size: 0.9em;">
-                        <div style="margin: 5px 0;">
-                            <strong style="color: #4facfe;">DevEUI:</strong> 
-                            <span id="devEUI" style="font-family: monospace;">--</span>
+            <!-- Real-time Tab -->
+            <div class="tab-content active" id="realtime-tab">
+                <div class="grid">
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">⚡</div>
+                            Voltage
                         </div>
-                        <div style="margin: 5px 0;">
-                            <strong style="color: #4facfe;">RSSI:</strong> 
-                            <span id="rssi">--</span> dBm
+                        <div class="card-value" id="voltage">--<span class="card-unit">V</span></div>
+                        <div class="gauge-container">
+                            <canvas id="voltageGauge" class="gauge"></canvas>
                         </div>
-                        <div style="margin: 5px 0;">
-                            <strong style="color: #4facfe;">SNR:</strong> 
-                            <span id="snr">--</span> dB
-                        </div>
-                        <div style="margin: 5px 0;">
-                            <strong style="color: #4facfe;">Gateway:</strong> 
-                            <span id="gateway" style="font-size: 0.8em;">--</span>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="data-label">Status:</span>
+                                <span class="data-value" id="voltageStatus">
+                                    <span class="status-indicator"></span>Normal
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="card chart-container">
-                    <div class="card-title">
-                        <div class="card-icon">📈</div>
-                        Power Consumption (Real-time)
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">🔌</div>
+                            Current
+                        </div>
+                        <div class="card-value" id="current">--<span class="card-unit">A</span></div>
+                        <div class="gauge-container">
+                            <canvas id="currentGauge" class="gauge"></canvas>
+                        </div>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="data-label">Apparent Power:</span>
+                                <span class="data-value" id="apparentPower">-- VA</span>
+                            </div>
+                        </div>
                     </div>
-                    <canvas id="powerChart"></canvas>
+
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">💡</div>
+                            Power
+                        </div>
+                        <div class="card-value" id="power">--<span class="card-unit">W</span></div>
+                        <div class="gauge-container">
+                            <canvas id="powerGauge" class="gauge"></canvas>
+                        </div>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="data-label">Load Factor:</span>
+                                <span class="data-value" id="loadFactor">-- %</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">📊</div>
+                            Power Factor
+                        </div>
+                        <div class="card-value" id="powerFactor">--</div>
+                        <div class="gauge-container">
+                            <canvas id="pfGauge" class="gauge"></canvas>
+                        </div>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="data-label">Quality:</span>
+                                <span class="data-value" id="pfQuality">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">〰️</div>
+                            Frequency
+                        </div>
+                        <div class="card-value" id="frequency">--<span class="card-unit">Hz</span></div>
+                        <div class="data-grid" style="margin-top: 20px;">
+                            <div class="data-item">
+                                <span class="data-label">Daily:</span>
+                                <span class="data-value" id="dailyKwh">-- kWh</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Monthly:</span>
+                                <span class="data-value" id="monthlyKwh">-- kWh</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card cost-display">
+                        <div class="card-title" style="color: white;">
+                            <div class="card-icon" style="background: white; color: #f12711;">₱</div>
+                            Daily Cost
+                        </div>
+                        <div class="card-value" id="dailyCost">₱ --</div>
+                        <div style="color: rgba(255,255,255,0.8);">Rate: ₱<span id="rate">--</span>/kWh</div>
+                    </div>
+
+                    <div class="card chart-container">
+                        <div class="card-title">
+                            <div class="card-icon">📈</div>
+                            Power Consumption (Real-time)
+                        </div>
+                        <canvas id="powerChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consumption Tab -->
+            <div class="tab-content" id="consumption-tab">
+                <div class="grid">
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">⏰</div>
+                            Hourly Summary
+                        </div>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="data-label">Current Hour:</span>
+                                <span class="data-value" id="currentHour">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Consumption:</span>
+                                <span class="data-value" id="hourlyKwh">-- kWh</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Avg Power:</span>
+                                <span class="data-value" id="hourlyAvgPower">-- W</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Peak Power:</span>
+                                <span class="data-value" id="hourlyPeakPower">-- W</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Cost:</span>
+                                <span class="data-value" id="hourlyCost">₱ --</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Voltage Range:</span>
+                                <span class="data-value" id="voltageRange">-- V</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">📅</div>
+                            Daily Summary
+                        </div>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="data-label">Total Energy:</span>
+                                <span class="data-value" id="dailySummaryKwh">-- kWh</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Peak Power:</span>
+                                <span class="data-value" id="dailyPeakPower">-- W</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Avg Power:</span>
+                                <span class="data-value" id="dailyAvgPower">-- W</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Peak Hour:</span>
+                                <span class="data-value" id="peakHour">--:00</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Total Cost:</span>
+                                <span class="data-value" id="dailySummaryCost">₱ --</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Uptime:</span>
+                                <span class="data-value" id="uptimePercent">-- %</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">📊</div>
+                            Consumption Overview
+                        </div>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="data-label">Hourly:</span>
+                                <span class="data-value" id="overviewHourly">-- kWh</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Daily:</span>
+                                <span class="data-value" id="overviewDaily">-- kWh</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Monthly:</span>
+                                <span class="data-value" id="overviewMonthly">-- kWh</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Yearly:</span>
+                                <span class="data-value" id="overviewYearly">-- kWh</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Month Cost:</span>
+                                <span class="data-value" id="overviewMonthlyCost">₱ --</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Projected:</span>
+                                <span class="data-value" id="projectedCost">₱ --</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card chart-container">
+                        <div class="card-title">
+                            <div class="card-icon">📊</div>
+                            Daily Consumption Pattern
+                        </div>
+                        <canvas id="dailyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Billing Tab -->
+            <div class="tab-content" id="billing-tab">
+                <div class="grid">
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">📄</div>
+                            Billing Period Info
+                        </div>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="data-label">Billing Day:</span>
+                                <span class="data-value" id="billingDay">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Days Into Period:</span>
+                                <span class="data-value" id="daysIntoPeriod">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Days Remaining:</span>
+                                <span class="data-value" id="daysRemaining">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Period Usage:</span>
+                                <span class="data-value" id="billingPeriodKwh">-- kWh</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Period Cost:</span>
+                                <span class="data-value" id="billingPeriodCost">₱ --</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Projected Bill:</span>
+                                <span class="data-value" id="projectedBill">₱ --</span>
+                            </div>
+                        </div>
+                        <div class="billing-info" style="margin-top: 15px;">
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="data-label">Avg Daily:</span>
+                                    <span class="data-value" id="avgDailyKwh">-- kWh</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Rate Schedule:</span>
+                                    <span class="data-value" id="rateSchedule">--</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Peak Usage:</span>
+                                    <span class="data-value" id="peakHoursUsage">-- kWh</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Status:</span>
+                                    <span class="data-value" id="billingStatus">Normal</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">⚡</div>
+                            Total Energy Meter
+                        </div>
+                        <div class="card-value" id="totalEnergy">--<span class="card-unit">kWh</span></div>
+                        <div class="timestamp" id="lastUpdate">Last update: --</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Device Status Tab -->
+            <div class="tab-content" id="device-tab">
+                <div class="grid">
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">📡</div>
+                            Device Information
+                        </div>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="data-label">DevEUI:</span>
+                                <span class="data-value" id="devEUI" style="font-family: monospace;">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Firmware:</span>
+                                <span class="data-value" id="firmwareVersion">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Uptime:</span>
+                                <span class="data-value" id="deviceUptime">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Temperature:</span>
+                                <span class="data-value" id="deviceTemp">-- °C</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Free Memory:</span>
+                                <span class="data-value" id="freeHeap">-- bytes</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Last Reboot:</span>
+                                <span class="data-value" id="rebootReason">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            <div class="card-icon">📶</div>
+                            LoRa Connection
+                        </div>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="data-label">RSSI:</span>
+                                <span class="data-value" id="rssi">-- dBm</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">SNR:</span>
+                                <span class="data-value" id="snr">-- dB</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Gateway:</span>
+                                <span class="data-value" id="gateway" style="font-size: 0.8em;">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">TX Success:</span>
+                                <span class="data-value" id="txSuccess">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">TX Failed:</span>
+                                <span class="data-value" id="txFailed">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Success Rate:</span>
+                                <span class="data-value" id="txSuccessRate">-- %</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert History Tab -->
+            <div class="tab-content" id="alerts-tab">
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-icon">🚨</div>
+                        Alert History
+                    </div>
+                    <div class="alert-history" id="alertHistory">
+                        <div style="text-align: center; color: #666;">No alerts recorded</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Global variables
+        const CONFIG_KEY = 'energy_monitor_config';
+        let client = null;
+        let powerChart = null;
+        let dailyChart = null;
+        let gauges = {};
+        let reconnectTimer = null;
+        let gaugesInitialized = false;
+        let currentTab = 'realtime';
+        let alertHistory = [];
+        let latestData = {};
+
+        // Alert thresholds
+        const THRESHOLDS = {
+            voltage: { min: 200, max: 250 },
+            current: { max: 20 },
+            power: { max: 3000 },
+            powerFactor: { min: 0.8 }
+        };
+
         // Toggle info box
         function toggleInfoBox() {
             const infoBox = document.getElementById('infoBox');
@@ -694,21 +1106,27 @@
             }
         }
 
-        // Configuration storage
-        const CONFIG_KEY = 'energy_monitor_config';
-        let client = null;
-        let powerChart = null;
-        let gauges = {};
-        let reconnectTimer = null;
-        let gaugesInitialized = false;
-
-        // Alert thresholds
-        const THRESHOLDS = {
-            voltage: { min: 200, max: 250 },
-            current: { max: 20 },
-            power: { max: 3000 },
-            powerFactor: { min: 0.8 }
-        };
+        // Switch tabs
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Initialize charts if needed
+            if (tabName === 'consumption' && !dailyChart) {
+                setTimeout(initializeDailyChart, 100);
+            }
+        }
 
         // Load saved configuration
         function loadConfig() {
@@ -857,8 +1275,8 @@
             // Create gauges with proper error handling
             try {
                 gauges.voltage = createGauge('voltageGauge', 'V', 0, 300, '#4facfe');
-                gauges.current = createGauge('currentGauge', 'A', 0, 10, '#00f2fe');
-                gauges.power = createGauge('powerGauge', 'W', 0, 1000, '#f5af19');
+                gauges.current = createGauge('currentGauge', 'A', 0, 30, '#00f2fe');
+                gauges.power = createGauge('powerGauge', 'W', 0, 5000, '#f5af19');
                 gauges.pf = createGauge('pfGauge', 'PF', 0, 1, '#44ff44');
                 
                 gaugesInitialized = true;
@@ -909,6 +1327,53 @@
                             ticks: {
                                 color: '#888',
                                 maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            },
+                            ticks: {
+                                color: '#888'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize daily chart
+        function initializeDailyChart() {
+            const ctx = document.getElementById('dailyChart');
+            if (!ctx) return;
+            
+            dailyChart = new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => i + ':00'),
+                    datasets: [{
+                        label: 'Hourly Consumption (kWh)',
+                        data: new Array(24).fill(0),
+                        backgroundColor: 'rgba(79, 172, 254, 0.6)',
+                        borderColor: '#4facfe',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            },
+                            ticks: {
+                                color: '#888'
                             }
                         },
                         y: {
@@ -1003,9 +1468,9 @@
                             document.getElementById('gateway').textContent = rxInfo.name || rxInfo.gatewayID || '--';
                         }
                         
-                        // Extract the decoded data
-                        if (payload.object) {
-                            updateDashboard(payload.object);
+                        // Extract the decoded data based on port
+                        if (payload.object && payload.fPort) {
+                            updateDashboard(payload.object, payload.fPort);
                         }
                     } catch (error) {
                         console.error('Error parsing message:', error);
@@ -1047,86 +1512,273 @@
             document.getElementById('dashboardSection').classList.remove('active');
         }
 
-        // Update dashboard with new data
-        function updateDashboard(data) {
-            // Wrap in requestAnimationFrame for smooth updates
+        // Update dashboard with new data based on port
+        function updateDashboard(data, port) {
+            // Store latest data
+            latestData[`port${port}`] = data;
+            
             requestAnimationFrame(() => {
-                // Handle both old format and new format
-                let voltage, current, power, powerFactor, frequency;
-                let totalEnergy, dailyKwh, monthlyKwh, dailyCost, rate;
-                
-                // Check if data is in new format (flat structure)
-                if (data.voltage !== undefined) {
-                    // New format - direct values
-                    voltage = data.voltage || 0;
-                    current = data.current || 0;
-                    power = data.power || 0;
-                    powerFactor = data.powerFactor || 0;
-                    frequency = data.frequency || 60;
-                    totalEnergy = data.energy || 0;
-                    dailyKwh = data.dailyKwh || 0;
-                    monthlyKwh = data.monthlyKwh || (dailyKwh * 30);
-                    dailyCost = data.dailyCost || 0;
-                    
-                    // Rate should be constant - use from data or default
-                    rate = data.rate || 11.16;
-                } else if (data.electrical) {
-                    // Old format - nested structure
-                    voltage = data.electrical.voltage || 0;
-                    current = data.electrical.current || 0;
-                    power = data.electrical.power || 0;
-                    powerFactor = data.electrical.power_factor || 0;
-                    frequency = data.electrical.frequency || 60;
-                    
-                    if (data.energy) {
-                        totalEnergy = data.energy.total_kwh || 0;
-                        dailyKwh = data.energy.daily_kwh || 0;
-                        monthlyKwh = data.energy.monthly_kwh || (dailyKwh * 30);
-                    }
-                    
-                    if (data.cost) {
-                        dailyCost = data.cost.daily_peso || 0;
-                        // Use fixed rate from data, not calculated
-                        rate = data.cost.rate_per_kwh || 11.16;
-                    }
+                switch(port) {
+                    case 1:
+                        updateRegularTelemetry(data);
+                        break;
+                    case 2:
+                        updateHourlySummary(data);
+                        break;
+                    case 3:
+                        updateDailySummary(data);
+                        break;
+                    case 4:
+                        updateAlert(data);
+                        break;
+                    case 5:
+                        updateDeviceStatus(data);
+                        break;
+                    case 6:
+                        updateConsumptionSummary(data);
+                        break;
+                    case 7:
+                        updateBillingData(data);
+                        break;
                 }
                 
-                // Update display values
-                document.getElementById('voltage').innerHTML = `${voltage.toFixed(1)}<span class="card-unit">V</span>`;
-                document.getElementById('current').innerHTML = `${current.toFixed(2)}<span class="card-unit">A</span>`;
-                document.getElementById('power').innerHTML = `${power.toFixed(0)}<span class="card-unit">W</span>`;
-                document.getElementById('powerFactor').textContent = powerFactor.toFixed(2);
-                document.getElementById('frequency').innerHTML = `${frequency.toFixed(1)}<span class="card-unit">Hz</span>`;
-                document.getElementById('dailyKwh').textContent = dailyKwh.toFixed(3);
-                document.getElementById('monthlyKwh').textContent = monthlyKwh.toFixed(2);
-
-                // Update gauges only if initialized
-                if (gaugesInitialized && gauges.voltage) {
-                    gauges.voltage.draw(voltage);
-                    gauges.current.draw(current);
-                    gauges.power.draw(power);
-                    gauges.pf.draw(powerFactor);
-                }
-
-                // Check thresholds
-                checkThresholds(voltage, current, power, powerFactor);
-
-                // Update chart
-                updateChart(power);
-
-                // Update energy values
-                document.getElementById('totalEnergy').innerHTML = 
-                    `${totalEnergy.toFixed(3)}<span class="card-unit">kWh</span>`;
-
-                // Update cost values
-                document.getElementById('dailyCost').textContent = `₱ ${dailyCost.toFixed(2)}`;
-                document.getElementById('rate').textContent = rate.toFixed(2);
-
                 // Update timestamp
                 const now = new Date();
                 document.getElementById('lastUpdate').textContent = 
                     `Last update: ${now.toLocaleTimeString()}`;
             });
+        }
+
+        // Update regular telemetry (Port 1)
+        function updateRegularTelemetry(data) {
+            // Basic electrical values
+            const voltage = data.voltage || 0;
+            const current = data.current || 0;
+            const power = data.power || 0;
+            const powerFactor = data.powerFactor || 0;
+            const frequency = data.frequency || 60;
+            const totalEnergy = data.totalEnergy || 0;
+            const dailyKwh = data.dailyKwh || 0;
+            const monthlyKwh = data.monthlyKwh || 0;
+            const dailyCost = data.dailyCost || 0;
+            
+            // Update display values
+            document.getElementById('voltage').innerHTML = `${voltage.toFixed(1)}<span class="card-unit">V</span>`;
+            document.getElementById('current').innerHTML = `${current.toFixed(2)}<span class="card-unit">A</span>`;
+            document.getElementById('power').innerHTML = `${power.toFixed(0)}<span class="card-unit">W</span>`;
+            document.getElementById('powerFactor').textContent = powerFactor.toFixed(2);
+            document.getElementById('frequency').innerHTML = `${frequency.toFixed(1)}<span class="card-unit">Hz</span>`;
+            document.getElementById('dailyKwh').textContent = dailyKwh.toFixed(3) + ' kWh';
+            document.getElementById('monthlyKwh').textContent = monthlyKwh.toFixed(2) + ' kWh';
+            document.getElementById('totalEnergy').innerHTML = 
+                `${totalEnergy.toFixed(3)}<span class="card-unit">kWh</span>`;
+            
+            // Update cost
+            document.getElementById('dailyCost').textContent = `₱ ${dailyCost.toFixed(2)}`;
+            if (dailyKwh > 0) {
+                const rate = dailyCost / dailyKwh;
+                document.getElementById('rate').textContent = rate.toFixed(2);
+            }
+            
+            // Update apparent power
+            const apparentPower = voltage * current;
+            document.getElementById('apparentPower').textContent = apparentPower.toFixed(0) + ' VA';
+            
+            // Update voltage status
+            updateVoltageStatus(voltage, data.overVoltage, data.underVoltage);
+            
+            // Update power factor quality
+            updatePowerFactorQuality(powerFactor);
+            
+            // Update gauges
+            if (gaugesInitialized && gauges.voltage) {
+                gauges.voltage.draw(voltage);
+                gauges.current.draw(current);
+                gauges.power.draw(power);
+                gauges.pf.draw(powerFactor);
+            }
+            
+            // Check thresholds
+            checkThresholds(voltage, current, power, powerFactor);
+            
+            // Update chart
+            updateChart(power);
+        }
+
+        // Update hourly summary (Port 2)
+        function updateHourlySummary(data) {
+            document.getElementById('currentHour').textContent = data.hour + ':00';
+            document.getElementById('hourlyKwh').textContent = data.hourlyKwh.toFixed(3) + ' kWh';
+            document.getElementById('hourlyAvgPower').textContent = data.avgPower + ' W';
+            document.getElementById('hourlyPeakPower').textContent = data.peakPower + ' W';
+            document.getElementById('hourlyCost').textContent = '₱ ' + data.hourlyCost.toFixed(2);
+            document.getElementById('voltageRange').textContent = 
+                `${data.minVoltage.toFixed(1)} - ${data.maxVoltage.toFixed(1)} V`;
+            
+            // Update load factor
+            if (data.loadFactor) {
+                document.getElementById('loadFactor').textContent = (data.loadFactor * 100).toFixed(1) + ' %';
+            }
+            
+            // Update daily chart if visible
+            if (dailyChart && currentTab === 'consumption') {
+                dailyChart.data.datasets[0].data[data.hour] = data.hourlyKwh;
+                dailyChart.update('none');
+            }
+        }
+
+        // Update daily summary (Port 3)
+        function updateDailySummary(data) {
+            document.getElementById('dailySummaryKwh').textContent = data.dailyKwh.toFixed(3) + ' kWh';
+            document.getElementById('dailyPeakPower').textContent = data.peakPower + ' W';
+            document.getElementById('dailyAvgPower').textContent = data.avgPower + ' W';
+            document.getElementById('peakHour').textContent = data.peakHour + ':00';
+            document.getElementById('dailySummaryCost').textContent = '₱ ' + data.dailyCost.toFixed(2);
+            document.getElementById('uptimePercent').textContent = data.uptimePercent || '--';
+        }
+
+        // Update alert (Port 4)
+        function updateAlert(data) {
+            // Add to alert history
+            const alertItem = {
+                timestamp: new Date().toLocaleTimeString(),
+                type: data.alertTypeText || 'Unknown',
+                severity: data.severity || 0,
+                severityText: data.severityText || 'Unknown',
+                value: data.value || 0,
+                threshold: data.threshold || 0,
+                duration: data.duration || 0
+            };
+            
+            alertHistory.unshift(alertItem);
+            if (alertHistory.length > 50) {
+                alertHistory.pop();
+            }
+            
+            // Update alert display
+            updateAlertHistory();
+            
+            // Show immediate alert
+            showAlert(`${data.alertTypeText}: ${data.value.toFixed(1)} (Threshold: ${data.threshold.toFixed(1)})`);
+        }
+
+        // Update device status (Port 5)
+        function updateDeviceStatus(data) {
+            document.getElementById('firmwareVersion').textContent = 'v' + data.firmwareVersion.toFixed(1);
+            document.getElementById('deviceUptime').textContent = formatUptime(data.uptime);
+            document.getElementById('deviceTemp').textContent = data.temperature + ' °C';
+            document.getElementById('freeHeap').textContent = data.freeHeap + ' bytes';
+            document.getElementById('rebootReason').textContent = data.rebootReasonText || 'Unknown';
+            
+            // Update LoRa stats
+            document.getElementById('txSuccess').textContent = data.txCount;
+            document.getElementById('txFailed').textContent = data.txFailed;
+            document.getElementById('txSuccessRate').textContent = data.txSuccessRate || '-- %';
+        }
+
+        // Update consumption summary (Port 6)
+        function updateConsumptionSummary(data) {
+            document.getElementById('overviewHourly').textContent = data.hourlyKwh.toFixed(3) + ' kWh';
+            document.getElementById('overviewDaily').textContent = data.dailyKwh.toFixed(3) + ' kWh';
+            document.getElementById('overviewMonthly').textContent = data.monthlyKwh.toFixed(2) + ' kWh';
+            document.getElementById('overviewYearly').textContent = data.yearlyKwh + ' kWh';
+            document.getElementById('overviewMonthlyCost').textContent = '₱ ' + data.monthlyCost.toFixed(2);
+            document.getElementById('projectedCost').textContent = '₱ ' + data.projectedMonthlyCost.toFixed(2);
+        }
+
+        // Update billing data (Port 7)
+        function updateBillingData(data) {
+            document.getElementById('billingDay').textContent = data.billingStartDay || 'Calendar Month';
+            document.getElementById('daysIntoPeriod').textContent = data.daysIntoPeriod;
+            document.getElementById('daysRemaining').textContent = data.daysRemaining;
+            document.getElementById('billingPeriodKwh').textContent = data.billingPeriodKwh.toFixed(2) + ' kWh';
+            document.getElementById('billingPeriodCost').textContent = '₱ ' + data.billingPeriodCost.toFixed(2);
+            document.getElementById('projectedBill').textContent = '₱ ' + data.projectedBill.toFixed(2);
+            document.getElementById('avgDailyKwh').textContent = data.avgDailyKwh.toFixed(3) + ' kWh';
+            document.getElementById('rateSchedule').textContent = data.rateSchedule === 1 ? 'Peak Hours' : 'Off-Peak';
+            document.getElementById('peakHoursUsage').textContent = data.peakHoursUsage.toFixed(3) + ' kWh';
+            
+            // Update billing status
+            let billingStatus = 'Normal';
+            if (data.highBillWarning) {
+                billingStatus = 'High Bill Warning';
+                document.getElementById('billingStatus').style.color = '#ff4444';
+            } else if (data.highUsageWarning) {
+                billingStatus = 'High Usage';
+                document.getElementById('billingStatus').style.color = '#ffa500';
+            } else {
+                document.getElementById('billingStatus').style.color = '#44ff44';
+            }
+            document.getElementById('billingStatus').textContent = billingStatus;
+        }
+
+        // Helper functions
+        function updateVoltageStatus(voltage, overVoltage, underVoltage) {
+            const statusElement = document.getElementById('voltageStatus');
+            const indicator = statusElement.querySelector('.status-indicator');
+            
+            if (overVoltage || voltage > THRESHOLDS.voltage.max) {
+                statusElement.innerHTML = '<span class="status-indicator critical"></span>Over Voltage';
+                indicator.classList.add('critical');
+            } else if (underVoltage || voltage < THRESHOLDS.voltage.min) {
+                statusElement.innerHTML = '<span class="status-indicator critical"></span>Under Voltage';
+                indicator.classList.add('critical');
+            } else if (voltage < 210 || voltage > 240) {
+                statusElement.innerHTML = '<span class="status-indicator warning"></span>Warning';
+                indicator.classList.add('warning');
+            } else {
+                statusElement.innerHTML = '<span class="status-indicator"></span>Normal';
+            }
+        }
+
+        function updatePowerFactorQuality(pf) {
+            const qualityElement = document.getElementById('pfQuality');
+            if (pf >= 0.95) {
+                qualityElement.textContent = 'Excellent';
+                qualityElement.style.color = '#44ff44';
+            } else if (pf >= 0.9) {
+                qualityElement.textContent = 'Good';
+                qualityElement.style.color = '#4facfe';
+            } else if (pf >= 0.8) {
+                qualityElement.textContent = 'Fair';
+                qualityElement.style.color = '#ffa500';
+            } else {
+                qualityElement.textContent = 'Poor';
+                qualityElement.style.color = '#ff4444';
+            }
+        }
+
+        function formatUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            
+            if (days > 0) {
+                return `${days}d ${hours}h ${minutes}m`;
+            } else if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else {
+                return `${minutes}m`;
+            }
+        }
+
+        function updateAlertHistory() {
+            const historyDiv = document.getElementById('alertHistory');
+            if (alertHistory.length === 0) {
+                historyDiv.innerHTML = '<div style="text-align: center; color: #666;">No alerts recorded</div>';
+                return;
+            }
+            
+            historyDiv.innerHTML = alertHistory.map(alert => {
+                const severityClass = `alert-severity-${alert.severity}`;
+                return `
+                    <div class="alert-item ${severityClass}">
+                        <strong>${alert.timestamp}</strong> - ${alert.type}
+                        <br>Value: ${alert.value.toFixed(1)} (Threshold: ${alert.threshold.toFixed(1)})
+                        <br>Severity: ${alert.severityText}
+                    </div>
+                `;
+            }).join('');
         }
 
         // Update power chart
