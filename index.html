@@ -1593,10 +1593,7 @@
             
             // Update cost
             document.getElementById('dailyCost').textContent = `₱ ${dailyCost.toFixed(2)}`;
-            if (dailyKwh > 0) {
-                const rate = dailyCost / dailyKwh;
-                document.getElementById('rate').textContent = rate.toFixed(2);
-            }
+            document.getElementById('rate').textContent = '11.16';
             
             // Update apparent power
             const apparentPower = voltage * current;
