@@ -508,30 +508,48 @@
         .alert-severity-3 { color: #ff4444; }
 
         @media (max-width: 768px) {
+            /* Default grid for real-time tab - 2 columns */
             .grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 12px;
             }
             
+            /* Force single column for consumption, billing, device, and alerts tabs */
+            #consumption-tab .grid,
+            #billing-tab .grid,
+            #device-tab .grid,
+            #alerts-tab .grid {
+                grid-template-columns: 1fr !important;
+                gap: 15px;
+            }
+            
+            /* Chart containers should span full width */
             .chart-container {
                 grid-column: span 2;
                 height: 250px;
             }
-
+            
+            /* Chart container in single column layouts */
+            #consumption-tab .chart-container,
+            #billing-tab .chart-container,
+            #device-tab .chart-container {
+                grid-column: span 1;
+            }
+        
             .card {
                 padding: 15px;
                 min-height: 220px;
             }
-
+        
             .card-value {
                 font-size: 1.8em;
             }
-
+        
             .card-title {
                 font-size: 1em;
                 margin-bottom: 10px;
             }
-
+        
             .header h1 {
                 font-size: 1.3em;
             }
@@ -539,11 +557,11 @@
             .config-section {
                 padding: 15px;
             }
-
+        
             .gauge-container {
                 height: 100px;
             }
-
+        
             .data-grid {
                 grid-template-columns: 1fr;
             }
@@ -814,7 +832,7 @@
                             <div class="card-icon">⏰</div>
                             Hourly Summary
                         </div>
-                        <div class="data-grid" style="grid-template-columns: 1fr;">
+                        <div class="data-grid">
                             <div class="data-item">
                                 <span class="data-label">Current Hour:</span>
                                 <span class="data-value" id="currentHour">--</span>
@@ -847,7 +865,7 @@
                             <div class="card-icon">📅</div>
                             Daily Summary
                         </div>
-                        <div class="data-grid" style="grid-template-columns: 1fr;">
+                        <div class="data-grid">
                             <div class="data-item">
                                 <span class="data-label">Total Energy:</span>
                                 <span class="data-value" id="dailySummaryKwh">-- kWh</span>
@@ -880,7 +898,7 @@
                             <div class="card-icon">📊</div>
                             Consumption Overview
                         </div>
-                        <div class="data-grid" style="grid-template-columns: 1fr;">
+                        <div class="data-grid">
                             <div class="data-item">
                                 <span class="data-label">Hourly:</span>
                                 <span class="data-value" id="overviewHourly">-- kWh</span>
