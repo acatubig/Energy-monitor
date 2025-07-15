@@ -1144,6 +1144,21 @@
             if (tabName === 'consumption' && !dailyChart) {
                 setTimeout(initializeDailyChart, 100);
             }
+
+            // Redraw gauges when returning to real-time tab
+            if (tabName === 'realtime' && gaugesInitialized) {
+                setTimeout(() => {
+                    // Redraw gauges with last known values
+                    if (latestData.port1) {
+                        const data = latestData.port1;
+                        gauges.voltage.draw(data.voltage || 0);
+                        gauges.current.draw(data.current || 0);
+                        gauges.power.draw(data.power || 0);
+                        gauges.pf.draw(data.powerFactor || 0);
+                    }
+                }, 100);
+            }
+
         }
 
         // Load saved configuration
