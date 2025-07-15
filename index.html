@@ -632,6 +632,38 @@
         .tab-content.active {
             display: block;
         }
+        .tab-refresh-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+            transition: all 0.3s ease;
+            font-size: 24px;
+            color: white;
+            z-index: 1000;
+        }
+        
+        .tab-refresh-btn:hover {
+            transform: translateY(-2px) rotate(180deg);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.5);
+        }
+        
+        .tab-refresh-btn:active {
+            transform: translateY(0) rotate(180deg) scale(0.95);
+        }
+        
+        .tab-refresh-btn.spinning {
+            animation: spin 1s linear;
+        }
     </style>
 </head>
 <body>
@@ -705,6 +737,10 @@
 
         <!-- Dashboard Section -->
         <div class="dashboard-section" id="dashboardSection">
+            <!-- Floating refresh button -->
+            <button class="tab-refresh-btn" onclick="refreshCurrentTab()" title="Refresh Tab Data">
+                ↻
+            </button>
             <!-- Tabs for different views -->
             <div class="tabs">
                 <div class="tab active" onclick="switchTab('realtime')">Real-time</div>
@@ -1159,6 +1195,77 @@
                 }, 100);
             }
 
+        }
+
+        // Refresh all data in current tab
+        function refreshCurrentTab() {
+            console.log('Refreshing tab:', currentTab);
+            
+            // Add spinning animation
+            const btn = event.target;
+            btn.classList.add('spinning');
+            setTimeout(() => {
+                btn.classList.remove('spinning');
+            }, 1000);
+            
+            switch(currentTab) {
+                case 'realtime':
+                    // Refresh all real-time data
+                    if (latestData.port1) {
+                        updateRegularTelemetry(latestData.port1);
+                    }
+                    // Reinitialize gauges if needed
+                    if (!gaugesInitialized || !gauges.voltage) {
+                        initializeGauges();
+                    }
+                    break;
+                    
+                case 'consumption':
+                    // Refresh consumption data
+                    if (latestData.port2) {
+                        updateHourlySummary(latestData.port2);
+                    }
+                    if (latestData.port3) {
+                        updateDailySummary(latestData.port3);
+                    }
+                    if (latestData.port6) {
+                        updateConsumptionSummary(latestData.port6);
+                    }
+                    // Reinitialize daily chart if needed
+                    if (!dailyChart) {
+                        initializeDailyChart();
+                    }
+                    break;
+                    
+                case 'billing':
+                    // Refresh billing data
+                    if (latestData.port7) {
+                        updateBillingData(latestData.port7);
+                    }
+                    if (latestData.port1) {
+                        // Update total energy from regular telemetry
+                        document.getElementById('totalEnergy').innerHTML = 
+                            `${(latestData.port1.totalEnergy || 0).toFixed(3)}<span class="card-unit">kWh</span>`;
+                    }
+                    break;
+                    
+                case 'device':
+                    // Refresh device status
+                    if (latestData.port5) {
+                        updateDeviceStatus(latestData.port5);
+                    }
+                    break;
+                    
+                case 'alerts':
+                    // Refresh alert history display
+                    updateAlertHistory();
+                    break;
+            }
+            
+            // Update last refresh timestamp
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = 
+                `Last update: ${now.toLocaleTimeString()}`;
         }
 
         // Load saved configuration
