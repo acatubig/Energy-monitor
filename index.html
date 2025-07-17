@@ -1305,6 +1305,61 @@
             return config;
         }
 
+        // Save data to localStorage
+        function saveDataToStorage() {
+            try {
+                // Save latest data
+                localStorage.setItem('energy_latestData', JSON.stringify(latestData));
+                
+                // Save alert history (limit to last 20 to save space)
+                const recentAlerts = alertHistory.slice(0, 20);
+                localStorage.setItem('energy_alertHistory', JSON.stringify(recentAlerts));
+                
+                // Save last update time
+                localStorage.setItem('energy_lastUpdate', new Date().toISOString());
+            } catch (e) {
+                console.error('Failed to save data:', e);
+            }
+        }
+        
+        // Load data from localStorage
+        function loadDataFromStorage() {
+            try {
+                // Load latest data
+                const savedData = localStorage.getItem('energy_latestData');
+                if (savedData) {
+                    latestData = JSON.parse(savedData);
+                    console.log('Loaded saved data:', latestData);
+                    
+                    // Restore displays for each port
+                    if (latestData.port1) updateRegularTelemetry(latestData.port1);
+                    if (latestData.port2) updateHourlySummary(latestData.port2);
+                    if (latestData.port3) updateDailySummary(latestData.port3);
+                    if (latestData.port5) updateDeviceStatus(latestData.port5);
+                    if (latestData.port6) updateConsumptionSummary(latestData.port6);
+                    if (latestData.port7) updateBillingData(latestData.port7);
+                }
+                
+                // Load alert history
+                const savedAlerts = localStorage.getItem('energy_alertHistory');
+                if (savedAlerts) {
+                    alertHistory = JSON.parse(savedAlerts);
+                    updateAlertHistory();
+                }
+                
+                // Show last update time
+                const lastUpdate = localStorage.getItem('energy_lastUpdate');
+                if (lastUpdate) {
+                    const updateTime = new Date(lastUpdate);
+                    document.getElementById('lastUpdate').textContent = 
+                        `Last update: ${updateTime.toLocaleTimeString()} (Restored)`;
+                }
+                
+            } catch (e) {
+                console.error('Failed to load saved data:', e);
+            }
+        }
+
         // Initialize gauges with fixed canvas setup
         function createGauge(canvasId, label, min, max, color) {
             const canvas = document.getElementById(canvasId);
@@ -1656,6 +1711,9 @@
         function updateDashboard(data, port) {
             // Store latest data
             latestData[`port${port}`] = data;
+
+            // Save to localStorage
+            saveDataToStorage();
             
             requestAnimationFrame(() => {
                 switch(port) {
@@ -1998,6 +2056,9 @@
             // Load saved configuration
             try {
                 const savedConfig = loadConfig();
+
+                // Load saved data from localStorage
+                loadDataFromStorage();
                 
                 // Auto-connect if configuration exists
                 if (savedConfig && savedConfig.brokerUrl) {
