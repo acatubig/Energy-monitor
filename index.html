@@ -1314,6 +1314,23 @@
                 // Save alert history (limit to last 20 to save space)
                 const recentAlerts = alertHistory.slice(0, 20);
                 localStorage.setItem('energy_alertHistory', JSON.stringify(recentAlerts));
+
+                // Save power chart data
+                if (powerChart && powerChart.data) {
+                    const chartData = {
+                        labels: powerChart.data.labels.slice(-50), // Last 50 points
+                        data: powerChart.data.datasets[0].data.slice(-50)
+                    };
+                    localStorage.setItem('energy_powerChartData', JSON.stringify(chartData));
+                }
+                
+                // Save daily chart data
+                if (dailyChart && dailyChart.data) {
+                    const dailyData = {
+                        data: dailyChart.data.datasets[0].data
+                    };
+                    localStorage.setItem('energy_dailyChartData', JSON.stringify(dailyData));
+                }
                 
                 // Save last update time
                 localStorage.setItem('energy_lastUpdate', new Date().toISOString());
@@ -1330,6 +1347,9 @@
                 if (savedData) {
                     latestData = JSON.parse(savedData);
                     console.log('Loaded saved data:', latestData);
+
+                    // Show dashboard section if we have data
+                    document.getElementById('dashboardSection').classList.add('active');
                     
                     // Restore displays for each port
                     if (latestData.port1) updateRegularTelemetry(latestData.port1);
@@ -1345,6 +1365,41 @@
                 if (savedAlerts) {
                     alertHistory = JSON.parse(savedAlerts);
                     updateAlertHistory();
+                }
+
+                // Load and restore power chart data
+                const savedChartData = localStorage.getItem('energy_powerChartData');
+                if (savedChartData) {
+                    const chartData = JSON.parse(savedChartData);
+                    // Initialize chart first if needed
+                    if (!powerChart) {
+                        initializePowerChart();
+                    }
+                    // Restore data
+                    setTimeout(() => {
+                        if (powerChart) {
+                            powerChart.data.labels = chartData.labels;
+                            powerChart.data.datasets[0].data = chartData.data;
+                            powerChart.update('none');
+                        }
+                    }, 200);
+                }
+                
+                // Load and restore daily chart data
+                const savedDailyData = localStorage.getItem('energy_dailyChartData');
+                if (savedDailyData && currentTab === 'consumption') {
+                    const dailyData = JSON.parse(savedDailyData);
+                    // Initialize chart first if needed
+                    if (!dailyChart) {
+                        initializeDailyChart();
+                    }
+                    // Restore data
+                    setTimeout(() => {
+                        if (dailyChart) {
+                            dailyChart.data.datasets[0].data = dailyData.data;
+                            dailyChart.update('none');
+                        }
+                    }, 200);
                 }
                 
                 // Show last update time
@@ -1992,6 +2047,9 @@
             powerChart.data.labels.push(timeLabel);
             powerChart.data.datasets[0].data.push(power);
             powerChart.update('none');
+
+            // Save chart data
+            saveDataToStorage();
         }
 
         // Check thresholds and show alerts
